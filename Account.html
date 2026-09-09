@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมุดบัญชี รายรับ-รายจ่าย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f6f3ea;
+    --paper-line: #b7c9ae;
+    --ink: #2b2b26;
+    --ink-soft: #6b6a5f;
+    --income: #3d6b52;
+    --income-bg: #e4ede2;
+    --expense: #a8402f;
+    --expense-bg: #f3e2dd;
+    --gold: #a9821c;
+    --rule: #d8d2bf;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--paper);
+    background-image:
+      repeating-linear-gradient(var(--paper), var(--paper) 35px, var(--paper-line) 36px);
+    background-attachment: local;
+    color: var(--ink);
+    font-family: 'Noto Serif Thai', serif;
+    min-height: 100vh;
+    padding: 32px 18px 80px;
+  }
+  .sheet{
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .masthead{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 3px double var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .masthead h1{
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+  .masthead .clock{
+    text-align: right;
+    color: var(--ink-soft);
+  }
+  .masthead .clock .today{
+    font-size: 13px;
+  }
+  .masthead .clock .time{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--ink);
+    margin-bottom: 26px;
+  }
+  .summary div{
+    padding: 14px 16px;
+    border-right: 1px solid var(--ink);
+  }
+  .summary div:last-child{ border-right: none; }
+  .summary .label{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .summary .amount{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary .income .amount{ color: var(--income); }
+  .summary .expense .amount{ color: var(--expense); }
+  .summary .balance{ background: var(--ink); }
+  .summary .balance .label{ color: #cfcabb; }
+  .summary .balance .amount{ color: #f6f3ea; }
+
+  form.entry{
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 0.9fr auto;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  form.entry input, form.entry select{
+    font-family: 'Noto Serif Thai', serif;
+    font-size: 14px;
+    padding: 10px 10px;
+    border: 1px solid var(--ink-soft);
+    background: #fffdf7;
+    color: var(--ink);
+    border-radius: 2px;
+  }
+  form.entry input[type="number"]{
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: right;
+  }
+  form.entry button{
+    font-family: 'Noto Serif Thai', serif;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 2px;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  form.entry button:hover{ background: #454539; }
+  .type-toggle{
+    display:flex;
+    gap: 14px;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .type-toggle label{ display:flex; align-items:center; gap:5px; cursor:pointer; }
+
+  .ledger{
+    border-top: 2px solid var(--ink);
+  }
+  .ledger-head{
+    display:grid;
+    grid-template-columns: 90px 1fr 90px 130px 34px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .row{
+    display:grid;
+    grid-template-columns: 90px 1fr 90px 130px 34px;
+    align-items:center;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14px;
+  }
+  .row .date{ color: var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:13px; line-height:1.5; }
+  .row .date .t{ display:block; font-size:11px; color: #9a9789; }
+  .row .tag{
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    width: fit-content;
+  }
+  .row .tag.income{ background: var(--income-bg); color: var(--income); }
+  .row .tag.expense{ background: var(--expense-bg); color: var(--expense); }
+  .row .amount{
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .row .amount.income{ color: var(--income); }
+  .row .amount.expense{ color: var(--expense); }
+  .row .del{
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    cursor:pointer;
+    font-size: 16px;
+    justify-self: end;
+  }
+  .row .del:hover{ color: var(--expense); }
+
+  .empty{
+    text-align:center;
+    padding: 40px 10px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px){
+    .summary{ grid-template-columns: 1fr; }
+    .summary div{ border-right:none; border-bottom: 1px solid var(--ink); }
+    form.entry{ grid-template-columns: 1fr; }
+    .ledger-head{ display:none; }
+    .row{
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "item item"
+        "date tag"
+        "amount del";
+      row-gap: 4px;
+      padding: 12px 4px;
+    }
+    .row .date{ grid-area: date; }
+    .row .item{ grid-area: item; font-weight:500; }
+    .row .tag{ grid-area: tag; justify-self: start; }
+    .row .amount{ grid-area: amount; }
+    .row .del{ grid-area: del; }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="masthead">
+      <h1>สมุดบัญชี รายรับ-รายจ่าย</h1>
+      <div class="clock">
+        <div class="today" id="todayLabel"></div>
+        <div class="time" id="timeLabel"></div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="income">
+        <div class="label">รายรับรวม</div>
+        <div class="amount" id="sumIncome">0.00</div>
+      </div>
+      <div class="expense">
+        <div class="label">รายจ่ายรวม</div>
+        <div class="amount" id="sumExpense">0.00</div>
+      </div>
+      <div class="balance">
+        <div class="label">คงเหลือ</div>
+        <div class="amount" id="sumBalance">0.00</div>
+      </div>
+    </div>
+
+    <form class="entry" id="entryForm">
+      <input type="text" id="inputTitle" placeholder="รายการ เช่น เงินเดือน, ค่าอาหาร" required>
+      <input type="date" id="inputDate" required>
+      <input type="number" id="inputAmount" placeholder="จำนวนเงิน" step="0.01" min="0" required>
+      <button type="submit">+ บันทึก</button>
+    </form>
+    <div class="type-toggle">
+      <label><input type="radio" name="type" value="income" checked> รายรับ</label>
+      <label><input type="radio" name="type" value="expense"> รายจ่าย</label>
+    </div>
+
+    <div class="ledger">
+      <div class="ledger-head">
+        <div>วันที่</div>
+        <div>รายการ</div>
+        <div>ประเภท</div>
+        <div style="text-align:right;">จำนวนเงิน</div>
+        <div></div>
+      </div>
+      <div id="rows"></div>
+      <div class="empty" id="emptyState" style="display:none;">ยังไม่มีรายการ — เริ่มบันทึกรายรับหรือรายจ่ายแรกของคุณด้านบน</div>
+    </div>
+  </div>
+
+<script>
+  const STORAGE_KEY = 'ledger:transactions';
+  let transactions = [];
+
+  const rowsEl = document.getElementById('rows');
+  const emptyEl = document.getElementById('emptyState');
+  const form = document.getElementById('entryForm');
+  const todayLabel = document.getElementById('todayLabel');
+  const timeLabel = document.getElementById('timeLabel');
+
+  const WEEKDAYS = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
+  const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  const dateInput = document.getElementById('inputDate');
+  dateInput.value = new Date().toISOString().slice(0,10);
+
+  function formatMoney(n){
+    return Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function formatThaiDate(iso){
+    const d = new Date(iso + 'T00:00:00');
+    return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()+543}`;
+  }
+
+  function two(n){ return String(n).padStart(2,'0'); }
+
+  function tickClock(){
+    const now = new Date();
+    todayLabel.textContent = `${WEEKDAYS[now.getDay()]}ที่ ${now.getDate()} ${MONTHS[now.getMonth()]} พ.ศ. ${now.getFullYear()+543}`;
+    timeLabel.textContent = `${two(now.getHours())}:${two(now.getMinutes())}:${two(now.getSeconds())} น.`;
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  async function loadTransactions(){
+    try{
+      const result = await window.storage.get(STORAGE_KEY, false);
+      transactions = result ? JSON.parse(result.value) : [];
+    }catch(e){
+      transactions = [];
+    }
+    render();
+  }
+
+  async function saveTransactions(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(transactions), false);
+    }catch(e){
+      console.error('บันทึกข้อมูลไม่สำเร็จ', e);
+    }
+  }
+
+  function render(){
+    const sorted = [...transactions].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+    rowsEl.innerHTML = '';
+    emptyEl.style.display = sorted.length ? 'none' : 'block';
+
+    let income = 0, expense = 0;
+    for(const t of transactions){
+      if(t.type === 'income') income += t.amount; else expense += t.amount;
+    }
+
+    document.getElementById('sumIncome').textContent = formatMoney(income);
+    document.getElementById('sumExpense').textContent = formatMoney(expense);
+    document.getElementById('sumBalance').textContent = formatMoney(income - expense);
+
+    for(const t of sorted){
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <div class="date">${formatThaiDate(t.date)}${t.time ? `<span class="t">${t.time} น.</span>` : ''}</div>
+        <div class="item">${escapeHtml(t.title)}</div>
+        <div><span class="tag ${t.type}">${t.type === 'income' ? 'รายรับ' : 'รายจ่าย'}</span></div>
+        <div class="amount ${t.type}">${t.type === 'expense' ? '-' : ''}${formatMoney(t.amount)}</div>
+        <button class="del" title="ลบรายการ" data-id="${t.id}">✕</button>
+      `;
+      rowsEl.appendChild(row);
+    }
+
+    rowsEl.querySelectorAll('.del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        transactions = transactions.filter(t => t.id !== id);
+        saveTransactions();
+        render();
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('inputTitle').value.trim();
+    const date = document.getElementById('inputDate').value;
+    const amount = parseFloat(document.getElementById('inputAmount').value);
+    const type = document.querySelector('input[name="type"]:checked').value;
+
+    if(!title || !date || isNaN(amount) || amount <= 0) return;
+
+    const now = new Date();
+    const time = `${two(now.getHours())}:${two(now.getMinutes())}`;
+    transactions.push({ id: Date.now(), title, date, time, amount, type });
+    saveTransactions();
+    render();
+
+    document.getElementById('inputTitle').value = '';
+    document.getElementById('inputAmount').value = '';
+    document.getElementById('inputTitle').focus();
+  });
+
+  loadTransactions();
+</script>
+</body>
+</html>
